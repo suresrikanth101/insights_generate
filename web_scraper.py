@@ -63,16 +63,16 @@ class WebScraper:
             url_col = df.columns[1]  # Second column
             
             # Create list of dictionaries with content name and URL
-            content_data = []
+            content_entries = []
             for _, row in df.iterrows():
                 if pd.notna(row[url_col]):  # Only include rows with valid URLs
-                    content_data.append({
+                    content_entries.append({
                         'content_name': str(row[content_name_col]),
                         'url': str(row[url_col])
                     })
             
-            logging.info(f"Successfully loaded {len(content_data)} content entries from Excel")
-            return content_data
+            logging.info(f"Successfully loaded {len(content_entries)} content entries from Excel")
+            return content_entries
             
         except Exception as e:
             logging.error(f"Error loading data from Excel: {str(e)}")
@@ -133,14 +133,14 @@ class WebScraper:
         """Extract domain from URL for rate limiting."""
         return urlparse(url).netloc
 
-    def _save_content(self, content_name: str, url: str, content: Dict) -> None:
+    def _save_content(self, content_name: str, url: str, scraped_data: Dict) -> None:
         """
         Save scraped content to a file.
         
         Args:
             content_name (str): Name of the content from Excel
             url (str): URL that was scraped
-            content (Dict): Content to save
+            scraped_data (Dict): Content to save
         """
         try:
             domain = self._get_domain(url)
@@ -152,27 +152,27 @@ class WebScraper:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(f"Content Name: {content_name}\n")
                 f.write(f"URL: {url}\n")
-                f.write(f"Title: {content.get('title', 'N/A')}\n")
-                f.write(f"Text Content: {content.get('text', 'N/A')}\n")
-                f.write(f"Links: {', '.join(content.get('links', []))}\n")
-                f.write(f"Robots.txt Status: {content.get('robots_status', 'N/A')}\n")
+                f.write(f"Title: {scraped_data.get('title', 'N/A')}\n")
+                f.write(f"Text Content: {scraped_data.get('text', 'N/A')}\n")
+                f.write(f"Links: {', '.join(scraped_data.get('links', []))}\n")
+                f.write(f"Robots.txt Status: {scraped_data.get('robots_status', 'N/A')}\n")
             
             logging.info(f"Saved content for '{content_name}' from {url} to {filepath}")
         except Exception as e:
             logging.error(f"Error saving content for {url}: {str(e)}")
 
-    def _scrape_url(self, content_data: Dict[str, str]) -> Optional[Dict]:
+    def _scrape_url(self, content_entry: Dict[str, str]) -> Optional[Dict]:
         """
         Scrape a single URL with error handling and rate limiting.
         
         Args:
-            content_data (Dict[str, str]): Dictionary containing content name and URL
+            content_entry (Dict[str, str]): Dictionary containing content name and URL
             
         Returns:
             Optional[Dict]: Dictionary containing scraped content or None if failed
         """
-        content_name = content_data['content_name']
-        url = content_data['url']
+        content_name = content_entry['content_name']
+        url = content_entry['url']
         
         try:
             # Check robots.txt first
@@ -190,7 +190,7 @@ class WebScraper:
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # Extract content
-            content = {
+            scraped_data = {
                 'title': soup.title.string if soup.title else 'No title found',
                 'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')]),
                 'links': [a.get('href') for a in soup.find_all('a', href=True)],
@@ -198,8 +198,8 @@ class WebScraper:
             }
             
             # Save content
-            self._save_content(content_name, url, content)
-            return content
+            self._save_content(content_name, url, scraped_data)
+            return scraped_data
             
         except requests.exceptions.RequestException as e:
             logging.error(f"Error scraping {url} for content '{content_name}': {str(e)}")
@@ -218,28 +218,28 @@ class WebScraper:
         Returns:
             List[Dict]: List of scraped content dictionaries
         """
-        results = []
+        scraped_results = []
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_content = {
-                executor.submit(self._scrape_url, content_data): content_data 
-                for content_data in self.content_data
+            scraping_tasks = {
+                executor.submit(self._scrape_url, content_entry): content_entry 
+                for content_entry in self.content_data
             }
             
-            for future in future_to_content:
-                content_data = future_to_content[future]
+            for scraping_task in scraping_tasks:
+                content_entry = scraping_tasks[scraping_task]
                 try:
-                    result = future.result()
-                    if result:
-                        results.append({
-                            'content_name': content_data['content_name'],
-                            'url': content_data['url'],
-                            'content': result
+                    scraped_data = scraping_task.result()
+                    if scraped_data:
+                        scraped_results.append({
+                            'content_name': content_entry['content_name'],
+                            'url': content_entry['url'],
+                            'content': scraped_data
                         })
                 except Exception as e:
-                    logging.error(f"Error processing {content_data['url']} for content '{content_data['content_name']}': {str(e)}")
+                    logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
         
-        return results
+        return scraped_results
 
 def main():
     # Example usage
