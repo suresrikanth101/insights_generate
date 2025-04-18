@@ -1,14 +1,20 @@
+# Standard library imports
+import io
+import logging
+import mimetypes
+import os
+import random
+import time
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Optional, Tuple
+from urllib.parse import urlparse, urljoin
+from urllib.robotparser import RobotFileParser
+
+# Third-party imports
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import time
-import logging
-from typing import List, Dict, Optional, Tuple
-from urllib.parse import urlparse, urljoin
-import random
-from concurrent.futures import ThreadPoolExecutor
-import os
-from urllib.robotparser import RobotFileParser
+import PyPDF2
 
 # Configure logging
 logging.basicConfig(
@@ -161,6 +167,74 @@ class WebScraper:
         except Exception as e:
             logging.error(f"Error saving content for {url}: {str(e)}")
 
+    def _is_pdf_url(self, url: str) -> bool:
+        """
+        Check if the URL points to a PDF file.
+        
+        Args:
+            url (str): URL to check
+            
+        Returns:
+            bool: True if URL points to a PDF file
+        """
+        # Check file extension
+        if url.lower().endswith('.pdf'):
+            return True
+            
+        # Check content type from URL
+        content_type, _ = mimetypes.guess_type(url)
+        return content_type == 'application/pdf'
+
+    def _handle_pdf(self, response: requests.Response, url: str) -> Dict:
+        """
+        Handle PDF file content.
+        
+        Args:
+            response (requests.Response): Response object containing PDF content
+            url (str): URL of the PDF file
+            
+        Returns:
+            Dict: Dictionary containing PDF metadata and content
+        """
+        try:
+            # Create a PDF reader object
+            pdf_file = io.BytesIO(response.content)
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            
+            # Extract metadata
+            metadata = pdf_reader.metadata
+            
+            # Extract text from first page (or all pages if needed)
+            text_content = ""
+            for page in pdf_reader.pages:
+                text_content += page.extract_text() + "\n"
+            
+            # Save PDF file
+            filename = os.path.basename(urlparse(url).path)
+            if not filename:
+                filename = f"document_{int(time.time())}_{random.randint(1000, 9999)}.pdf"
+            
+            pdf_path = os.path.join(self.output_dir, filename)
+            with open(pdf_path, 'wb') as f:
+                f.write(response.content)
+            
+            return {
+                'title': metadata.get('/Title', filename) if metadata else filename,
+                'text': text_content,
+                'links': [],  # PDFs typically don't have links
+                'file_path': pdf_path,
+                'content_type': 'application/pdf'
+            }
+            
+        except Exception as e:
+            logging.error(f"Error processing PDF from {url}: {str(e)}")
+            return {
+                'title': 'Error processing PDF',
+                'text': f'Error: {str(e)}',
+                'links': [],
+                'content_type': 'application/pdf'
+            }
+
     def _scrape_url(self, content_entry: Dict[str, str]) -> Optional[Dict]:
         """
         Scrape a single URL with error handling and rate limiting.
@@ -187,15 +261,21 @@ class WebScraper:
             response = self.session.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            # Check if URL is a PDF
+            if self._is_pdf_url(url):
+                scraped_data = self._handle_pdf(response, url)
+            else:
+                # Handle HTML content
+                soup = BeautifulSoup(response.text, 'html.parser')
+                scraped_data = {
+                    'title': soup.title.string if soup.title else 'No title found',
+                    'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')]),
+                    'links': [a.get('href') for a in soup.find_all('a', href=True)],
+                    'content_type': 'text/html'
+                }
             
-            # Extract content
-            scraped_data = {
-                'title': soup.title.string if soup.title else 'No title found',
-                'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')]),
-                'links': [a.get('href') for a in soup.find_all('a', href=True)],
-                'robots_status': reason
-            }
+            # Add robots.txt status
+            scraped_data['robots_status'] = reason
             
             # Save content
             self._save_content(content_name, url, scraped_data)
