@@ -301,56 +301,70 @@ class CombinedScraper:
         content_name = content_entry['content_name']
         url = content_entry['url']
         
+        logging.info(f"Starting to process URL: {url} for content: {content_name}")
+        
         try:
             is_allowed, robots_status = self._is_allowed_by_robots(url)
             if not is_allowed:
-                logging.warning(f"Skipping {url} for content '{content_name}': {robots_status}")
+                logging.warning(f"URL blocked by robots.txt: {url} for content '{content_name}': {robots_status}")
                 return None
 
+            logging.info(f"Rate limiting: Waiting between 1-3 seconds before accessing {url}")
             time.sleep(random.uniform(1, 3))
             
+            logging.info(f"Making GET request to: {url}")
             response = self.session.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
+            logging.info(f"Successfully received response from {url} with status code: {response.status_code}")
             
             if self._is_pdf_url(url):
+                logging.info(f"Detected PDF URL: {url}")
                 scraped_data = self._handle_pdf(response, url, content_name)
-                # Add type field like in sample.py
                 scraped_data['type'] = 'pdf'
+                logging.info(f"Successfully processed PDF from {url}")
             else:
-                # Save HTML file
+                logging.info(f"Processing HTML content from: {url}")
                 html_filepath = self._save_html_file(response.text, content_name)
+                logging.info(f"Saved HTML content to: {html_filepath}")
                 
-                # Parse HTML
                 soup = BeautifulSoup(response.text, 'html.parser')
                 page_metadata = self._extract_page_metadata(soup)
+                logging.info(f"Extracted metadata from HTML: {page_metadata}")
                 
                 scraped_data = {
                     'title': soup.title.string if soup.title else 'No title found',
-                    'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')])[:5000],  # Limit text like in sample.py
+                    'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')])[:5000],
                     'links': [a.get('href') for a in soup.find_all('a', href=True)],
                     'content_type': 'text/html',
                     'last_modified': page_metadata['last_modified'],
                     'updated_time': page_metadata['updated_time'],
                     'published_date': page_metadata['published_date'],
                     'saved_filepath': html_filepath,
-                    'filename': os.path.basename(html_filepath),  # Add filename like in sample.py
-                    'type': 'html'  # Add type field like in sample.py
+                    'filename': os.path.basename(html_filepath),
+                    'type': 'html'
                 }
+                logging.info(f"Successfully processed HTML from {url}")
             
             scraped_data['robots_status'] = robots_status
             scraped_data['final_url'] = url
+            logging.info(f"Successfully completed processing {url} for content '{content_name}'")
             return scraped_data
             
         except requests.exceptions.RequestException as error:
-            logging.error(f"Error accessing {url} for content '{content_name}': {str(error)}")
+            logging.error(f"Request failed for URL {url} (content: '{content_name}'): {str(error)}")
             return None
         except Exception as error:
-            logging.error(f"Unexpected error scraping {url} for content '{content_name}': {str(error)}")
+            logging.error(f"Unexpected error processing {url} (content: '{content_name}'): {str(error)}")
             return None
 
     def scrape_all(self, max_workers: int = 5) -> List[Dict]:
         """Scrape all URLs using multiple threads."""
         scraped_results = []
+        total_urls = len(self.content_data)
+        successful_urls = 0
+        failed_urls = 0
+        
+        logging.info(f"Starting to scrape {total_urls} URLs with {max_workers} workers")
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             scraping_tasks = {
@@ -363,14 +377,27 @@ class CombinedScraper:
                 try:
                     scraped_data = scraping_task.result()
                     if scraped_data:
+                        successful_urls += 1
                         result = {
                             'content_name': content_entry['content_name'],
                             'url': content_entry['url'],
                             'content': scraped_data
                         }
                         scraped_results.append(result)
+                        logging.info(f"Successfully scraped {content_entry['url']} ({successful_urls}/{total_urls} successful)")
+                    else:
+                        failed_urls += 1
+                        logging.warning(f"Failed to scrape {content_entry['url']} ({failed_urls}/{total_urls} failed)")
                 except Exception as e:
+                    failed_urls += 1
                     logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
+        
+        # Log summary
+        logging.info(f"Scraping completed:")
+        logging.info(f"Total URLs processed: {total_urls}")
+        logging.info(f"Successful scrapes: {successful_urls}")
+        logging.info(f"Failed scrapes: {failed_urls}")
+        logging.info(f"Success rate: {(successful_urls/total_urls)*100:.2f}%")
         
         # Save all results to a single JSON file
         self._save_json_results(scraped_results)
@@ -382,6 +409,8 @@ class CombinedScraper:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             json_filename = f"scraped_results_{timestamp}.json"
             json_filepath = os.path.join(self.output_dir, json_filename)
+            
+            logging.info(f"Preparing to save {len(scraped_results)} results to JSON file")
             
             # Convert datetime objects to strings for JSON serialization
             json_data = []
@@ -399,13 +428,14 @@ class CombinedScraper:
             with open(json_filepath, 'w', encoding='utf-8') as json_file:
                 json.dump(json_data, json_file, indent=2, ensure_ascii=False)
             
-            logging.info(f"Saved all results to JSON file: {json_filepath}")
+            logging.info(f"Successfully saved results to JSON file: {json_filepath}")
             
         except Exception as error:
             logging.error(f"Error saving JSON results: {str(error)}")
 
 def main():
     # Example usage
+    logging.info("Starting web scraper")
     scraper = CombinedScraper('websites.xlsx')
     results = scraper.scrape_all()
     logging.info(f"Scraping completed. Successfully scraped {len(results)} URLs.")
