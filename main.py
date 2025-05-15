@@ -7,31 +7,57 @@ from nbx_recom.prompt_builder import build_prompt
 from nbx_recom.genai_client import get_recommendations
 import pandas as pd
 import os
-PRODUCTS_URL='https://www.verizon.com/business/products/verizon-marketplace'
-PRODUCTS_CSV_PATH='data/products.csv'
-SMB_DATA_PATH='data/smb_data.csv'
-OUTPUT_PATH='data/output/recommendations.json'
+import logging
+
+def setup_logging():
+    os.makedirs('logs', exist_ok=True)
+    logging.basicConfig(
+        filename='logs/nbx_recom.log',
+        filemode='a',
+        format='%(asctime)s %(levelname)s: %(message)s',
+        level=logging.INFO
+    )
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
 def main():
+    setup_logging()
+    logging.info('NBX Recommendation pipeline started.')
     # 1. Scrape products (or load from CSV if already scraped)
-    if os.path.exists(PRODUCTS_CSV_PATH):
-        products_df = pd.read_csv(PRODUCTS_CSV_PATH)
-    else:
-        print("Scraping products from marketplace...")
-        products_df = scrape_marketplace(PRODUCTS_URL)
-        save_products_csv(products_df, PRODUCTS_CSV_PATH)
-        print(f"Saved products to {PRODUCTS_CSV_PATH}")
+    try:
+        if os.path.exists(PRODUCTS_CSV_PATH):
+            products_df = pd.read_csv(PRODUCTS_CSV_PATH)
+            logging.info(f"Loaded products from {PRODUCTS_CSV_PATH}")
+        else:
+            logging.info("Scraping products from marketplace...")
+            products_df = scrape_marketplace(PRODUCTS_URL)
+            save_products_csv(products_df, PRODUCTS_CSV_PATH)
+            logging.info(f"Saved products to {PRODUCTS_CSV_PATH}")
+    except Exception as e:
+        logging.error(f"Failed to load or scrape products: {e}")
+        return
 
     # 2. Load SMB data
-    smb_df = load_smb_data(SMB_DATA_PATH)
+    try:
+        smb_df = load_smb_data(SMB_DATA_PATH)
+        logging.info(f"Loaded SMB data from {SMB_DATA_PATH} with {len(smb_df)} rows.")
+    except Exception as e:
+        logging.error(f"Failed to load SMB data: {e}")
+        return
 
     # 3. For each SMB, build prompt, call GenAI, save JSON
     all_results = []
     for idx, smb_row in tqdm(smb_df.iterrows(), total=smb_df.shape[0]):
-        prompt = build_prompt(smb_row, products_df)
         try:
+            prompt = build_prompt(smb_row, products_df)
             rec_json = get_recommendations(prompt)
+            logging.info(f"Generated recommendations for BUSINESS_ID={smb_row.get('BUSINESS_ID','')}.")
         except Exception as e:
             rec_json = json.dumps({"error": str(e)})
+            logging.error(f"Error for BUSINESS_ID={smb_row.get('BUSINESS_ID','')}: {e}")
         all_results.append({
             "BUSINESS_ID": smb_row.get("BUSINESS_ID", ""),
             "LEGAL_NAME": smb_row.get("LEGAL_NAME", ""),
@@ -39,10 +65,15 @@ def main():
         })
 
     # 4. Save all results
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
-        json.dump(all_results, f, indent=2)
-    print(f"Saved recommendations to {OUTPUT_PATH}")
+    try:
+        os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+        with open(OUTPUT_PATH, "w") as f:
+            json.dump(all_results, f, indent=2)
+        logging.info(f"Saved recommendations to {OUTPUT_PATH}")
+    except Exception as e:
+        logging.error(f"Failed to save recommendations: {e}")
+
+    logging.info('NBX Recommendation pipeline finished.')
 
 if __name__ == "__main__":
     main() 
