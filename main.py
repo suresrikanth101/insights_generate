@@ -8,6 +8,7 @@ from nbx_recom.genai_client import get_recommendations
 import pandas as pd
 import os
 import logging
+import re
 
 def setup_logging():
     os.makedirs('logs', exist_ok=True)
@@ -22,6 +23,15 @@ def setup_logging():
     formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
+
+def clean_json_response(response):
+    # Remove markdown code block markers
+    response = re.sub(r"^```json|^```|```$", "", response.strip(), flags=re.MULTILINE)
+    # Remove leading 'json\n' or similar
+    response = re.sub(r"^json\s*", "", response.strip(), flags=re.IGNORECASE)
+    # Strip whitespace
+    response = response.strip()
+    return response
 
 def main():
     setup_logging()
@@ -74,6 +84,7 @@ def main():
         logging.error(f"Failed to save recommendations: {e}")
 
     logging.info('NBX Recommendation pipeline finished.')
+
 
 if __name__ == "__main__":
     main() 
