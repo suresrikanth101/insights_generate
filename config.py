@@ -1,0 +1,5 @@
+OPENAI_API_KEY = "YOUR_OPENAI_API_KEY"
+PRODUCTS_URL = "https://www.verizon.com/business/shop/marketplace"
+SMB_DATA_PATH = "data/NBX_SMB_AAL_extract_0507.xlsx"
+PRODUCTS_CSV_PATH = "data/products.csv"
+OUTPUT_PATH = "data/smb_recommendations.json" 

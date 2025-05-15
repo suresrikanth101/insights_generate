@@ -1,3 +1,7 @@
 openai
+tqdm
 pandas
-openpyxl
+numpy
+beautifulsoup4
+requests 
+selenium
