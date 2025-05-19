@@ -37,7 +37,7 @@ A customer/company profile with relevant firmographic and behavioral data
 
 A list of products, each with descriptions, cost, and key benefits
 
-Your task is to analyze the customer profile using the provided important features, understand their likely needs and context, and return a ranked list of the products from most to least recommended.
+Your task is to analyze the customer profile, understand their likely needs and context, and return a ranked list of the products from most to least recommended.
 
 Please output your response in the following JSON format:
 
@@ -52,10 +52,7 @@ Please output your response in the following JSON format:
 ]
 }}
 
-Important Features Analysis:
-{json.dumps(feature_analysis, indent=2)}
-
-Customer Profile (Based on Important Features):
+Customer Profile:
 {smb_profile}
 
 Products:
