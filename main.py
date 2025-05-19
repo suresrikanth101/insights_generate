@@ -5,6 +5,7 @@ from nbx_recom.scraper import scrape_marketplace, save_products_csv
 from nbx_recom.data_utils import load_smb_data
 from nbx_recom.prompt_builder import build_prompt
 from nbx_recom.genai_client import get_recommendations
+from nbx_recom.feature_analyzer import analyze_customer_features
 import pandas as pd
 import os
 import logging
@@ -36,7 +37,8 @@ def clean_json_response(response):
 def main():
     setup_logging()
     logging.info('NBX Recommendation pipeline started.')
-    # 1. Scrape products (or load from CSV if already scraped)
+    
+    # 1. Load products data
     try:
         if os.path.exists(PRODUCTS_CSV_PATH):
             products_df = pd.read_csv(PRODUCTS_CSV_PATH)
@@ -58,11 +60,34 @@ def main():
         logging.error(f"Failed to load SMB data: {e}")
         return
 
-    # 3. For each SMB, build prompt, call GenAI, save JSON
+    # 3. Analyze customer data to identify important features
+    try:
+        logging.info("Analyzing customer data to identify important features...")
+        feature_analysis = analyze_customer_features(smb_df)
+        logging.info(f"Identified {feature_analysis['summary']['total_features_analyzed']} important features")
+    except Exception as e:
+        logging.error(f"Failed to analyze customer features: {e}")
+        return
+
+    # 4. Prompt user for BUSINESS_ID
+    try:
+        TARGET_BUSINESS_ID = int(input("Enter the BUSINESS_ID to process: "))
+    except ValueError:
+        logging.error("Invalid BUSINESS_ID entered. Please enter a numeric value.")
+        return
+
+    # Filter the DataFrame to just this business
+    smb_df = smb_df[smb_df["BUSINESS_ID"] == TARGET_BUSINESS_ID]
+    if smb_df.empty:
+        logging.error(f"No SMB found with BUSINESS_ID={TARGET_BUSINESS_ID}")
+        print(f"No SMB found with BUSINESS_ID={TARGET_BUSINESS_ID}")
+        return
+
+    # 5. Generate recommendations using identified features
     all_results = []
     for idx, smb_row in tqdm(smb_df.iterrows(), total=smb_df.shape[0]):
         try:
-            prompt = build_prompt(smb_row, products_df)
+            prompt = build_prompt(smb_row, products_df, feature_analysis)
             rec_json = get_recommendations(prompt)
             logging.info(f"Generated recommendations for BUSINESS_ID={smb_row.get('BUSINESS_ID','')}.")
         except Exception as e:
@@ -71,10 +96,11 @@ def main():
         all_results.append({
             "BUSINESS_ID": smb_row.get("BUSINESS_ID", ""),
             "LEGAL_NAME": smb_row.get("LEGAL_NAME", ""),
+            "feature_analysis": feature_analysis,
             "recommendations": rec_json
         })
 
-    # 4. Save all results
+    # 6. Save all results
     try:
         os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
         with open(OUTPUT_PATH, "w") as f:
@@ -84,7 +110,6 @@ def main():
         logging.error(f"Failed to save recommendations: {e}")
 
     logging.info('NBX Recommendation pipeline finished.')
-
 
 if __name__ == "__main__":
     main() 
