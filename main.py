@@ -25,14 +25,77 @@ def setup_logging():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
+def list_smb_columns(smb_df: pd.DataFrame, output_path: str = "data/smb_columns.csv"):
+    """
+    List all SMB data columns and save them to a CSV file.
+    
+    Args:
+        smb_df: DataFrame containing SMB data
+        output_path: Path to save the columns CSV file
+    """
+    try:
+        # Create a DataFrame with column information
+        columns_info = pd.DataFrame({
+            'column_name': smb_df.columns,
+            'data_type': smb_df.dtypes.astype(str),
+            'non_null_count': smb_df.count(),
+            'null_count': smb_df.isnull().sum(),
+            'unique_values': [smb_df[col].nunique() for col in smb_df.columns],
+            'sample_values': [str(smb_df[col].dropna().head(3).tolist()) for col in smb_df.columns]
+        })
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Save to CSV
+        columns_info.to_csv(output_path, index=False)
+        logging.info(f"Saved SMB columns information to {output_path}")
+        
+        # Print summary
+        print(f"\nSMB Data Columns Summary:")
+        print(f"Total columns: {len(smb_df.columns)}")
+        print(f"Columns information saved to: {output_path}")
+        print("\nFirst few columns:")
+        print(columns_info.head().to_string())
+        
+    except Exception as e:
+        logging.error(f"Failed to list SMB columns: {e}")
+        raise
+
 def clean_json_response(response):
+    """
+    Clean JSON response from LLM.
+    
+    Args:
+        response: Response from LLM (can be string or dict)
+        
+    Returns:
+        Cleaned response as string
+    """
+    # If response is a dictionary, convert to string first
+    if isinstance(response, dict):
+        response = json.dumps(response)
+    # If response is not a string, raise error
+    elif not isinstance(response, str):
+        raise ValueError(f"Unexpected response type: {type(response)}")
+        
+    # Clean the response string
     # Remove markdown code block markers
     response = re.sub(r"^```json|^```|```$", "", response.strip(), flags=re.MULTILINE)
     # Remove leading 'json\n' or similar
     response = re.sub(r"^json\s*", "", response.strip(), flags=re.IGNORECASE)
     # Strip whitespace
     response = response.strip()
-    return response
+    
+    # Validate and re-format JSON
+    try:
+        # Parse and re-serialize to ensure consistent formatting
+        json_obj = json.loads(response)
+        return json.dumps(json_obj, indent=2)
+    except json.JSONDecodeError as e:
+        logging.error(f"Invalid JSON after cleaning: {str(e)}")
+        logging.error(f"Response text: {response}")
+        raise ValueError(f"Invalid JSON after cleaning: {str(e)}")
 
 def main():
     setup_logging()
@@ -56,6 +119,9 @@ def main():
     try:
         smb_df = load_smb_data(SMB_DATA_PATH)
         logging.info(f"Loaded SMB data from {SMB_DATA_PATH} with {len(smb_df)} rows.")
+        
+        # List SMB columns
+        list_smb_columns(smb_df)
     except Exception as e:
         logging.error(f"Failed to load SMB data: {e}")
         return
@@ -89,15 +155,18 @@ def main():
         try:
             prompt = build_prompt(smb_row, products_df, feature_analysis)
             rec_json = get_recommendations(prompt)
+            # Clean and parse the JSON response
+            cleaned_json = clean_json_response(rec_json)
+            recommendations = json.loads(cleaned_json)
             logging.info(f"Generated recommendations for BUSINESS_ID={smb_row.get('BUSINESS_ID','')}.")
         except Exception as e:
-            rec_json = json.dumps({"error": str(e)})
+            recommendations = {"error": str(e)}
             logging.error(f"Error for BUSINESS_ID={smb_row.get('BUSINESS_ID','')}: {e}")
         all_results.append({
             "BUSINESS_ID": smb_row.get("BUSINESS_ID", ""),
             "LEGAL_NAME": smb_row.get("LEGAL_NAME", ""),
             "feature_analysis": feature_analysis,
-            "recommendations": rec_json
+            "recommendations": recommendations
         })
 
     # 6. Save all results
