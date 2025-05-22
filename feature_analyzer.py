@@ -7,12 +7,13 @@ from datetime import datetime
 from .genai_client import get_llm_response
 from .data_dictionary import get_all_descriptions
 
-def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30, data_dict_path: str = None) -> Dict:
+def analyze_customer_features(smb_df: pd.DataFrame, products_df: pd.DataFrame, num_features: int = 30, data_dict_path: str = None) -> Dict:
     """
     Analyze customer data to identify the most important features for product recommendations.
     
     Args:
         smb_df: DataFrame containing customer data
+        products_df: DataFrame containing product information
         num_features: Number of top features to identify (default: 30)
         data_dict_path: Optional path to Excel file containing data dictionary
     
@@ -35,9 +36,25 @@ def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30, data
         "sample_data": smb_df.head(5).to_dict(orient='records')
     }
     
+    # Prepare product information
+    product_summary = {
+        "total_products": len(products_df),
+        "product_categories": products_df['Category'].unique().tolist(),
+        "products": [
+            {
+                "name": row['Product Name'],
+                "category": row['Category'],
+                "cost": row['Cost'],
+                "description": row['Description'],
+                "key_features": row['Key Features']
+            }
+            for _, row in products_df.iterrows()
+        ]
+    }
+    
     # Build prompt for feature analysis
     prompt = f"""
-    Analyze the following customer data and identify the top {num_features} most important features 
+    Analyze the following customer data and product information to identify the top {num_features} most important features 
     that would be relevant for product recommendations. Consider factors like:
     - Business characteristics
     - Industry-specific needs
@@ -46,11 +63,17 @@ def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30, data
     - Current services and products
     - Business goals and challenges
     
-    Each column in the data has a specific meaning and purpose. Use the column descriptions to better understand
+    Each column in the customer data has a specific meaning and purpose. Use the column descriptions to better understand
     the data and make more informed decisions about feature importance.
+    
+    Consider the available products and their features when determining which customer attributes are most relevant
+    for making accurate product recommendations.
     
     Customer Data Summary:
     {json.dumps(customer_summary, indent=2)}
+    
+    Product Information:
+    {json.dumps(product_summary, indent=2)}
     
     Please provide a JSON response with the following structure:
     {{
@@ -58,13 +81,14 @@ def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30, data
             {{
                 "feature_name": "feature name",
                 "importance_score": score (1-10),
-                "reasoning": "brief explanation of why this feature is important for product recommendations"
+                "reasoning": "brief explanation of why this feature is important for product recommendations, considering both customer needs and product characteristics"
             }}
         ]
     }}
     
     Focus on features that would be most relevant for matching customers with appropriate products.
-    Consider the business context and how each feature might influence product needs.
+    Consider how each feature might influence product needs and which products would be most suitable
+    based on those features.
     """
     
     try:
