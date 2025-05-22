@@ -5,22 +5,33 @@ import logging
 import os
 from datetime import datetime
 from .genai_client import get_llm_response
+from .data_dictionary import get_all_descriptions
 
-def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30) -> Dict:
+def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30, data_dict_path: str = None) -> Dict:
     """
     Analyze customer data to identify the most important features for product recommendations.
     
     Args:
         smb_df: DataFrame containing customer data
         num_features: Number of top features to identify (default: 30)
+        data_dict_path: Optional path to Excel file containing data dictionary
     
     Returns:
         Dictionary containing feature analysis results with scores and reasoning
     """
-    # Prepare customer data summary
+    # Get column descriptions from data dictionary
+    column_descriptions = get_all_descriptions(data_dict_path)
+    
+    # Prepare customer data summary with column descriptions
     customer_summary = {
         "total_customers": len(smb_df),
-        "columns": list(smb_df.columns),
+        "columns": [
+            {
+                "name": col,
+                "description": column_descriptions.get(col, "No description available")
+            }
+            for col in smb_df.columns
+        ],
         "sample_data": smb_df.head(5).to_dict(orient='records')
     }
     
@@ -35,6 +46,9 @@ def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30) -> D
     - Current services and products
     - Business goals and challenges
     
+    Each column in the data has a specific meaning and purpose. Use the column descriptions to better understand
+    the data and make more informed decisions about feature importance.
+    
     Customer Data Summary:
     {json.dumps(customer_summary, indent=2)}
     
@@ -44,12 +58,13 @@ def analyze_customer_features(smb_df: pd.DataFrame, num_features: int = 30) -> D
             {{
                 "feature_name": "feature name",
                 "importance_score": score (1-10),
-                "reasoning": "brief explanation"
+                "reasoning": "brief explanation of why this feature is important for product recommendations"
             }}
         ]
     }}
     
     Focus on features that would be most relevant for matching customers with appropriate products.
+    Consider the business context and how each feature might influence product needs.
     """
     
     try:
