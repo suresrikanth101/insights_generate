@@ -25,6 +25,37 @@ def setup_logging():
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
+def load_or_create_feature_analysis(smb_df: pd.DataFrame, products_df: pd.DataFrame) -> dict:
+    """
+    Load existing feature analysis or create new one if not available.
+    
+    Args:
+        smb_df: DataFrame containing customer data
+        products_df: DataFrame containing product information
+        
+    Returns:
+        Dictionary containing feature analysis results
+    """
+    feature_analysis_path = "data/feature_analysis/feature_analysis.json"
+    
+    # Check if feature analysis exists
+    if os.path.exists(feature_analysis_path):
+        try:
+            with open(feature_analysis_path, 'r') as f:
+                feature_analysis = json.load(f)
+            logging.info("Loaded existing feature analysis")
+            return feature_analysis
+        except Exception as e:
+            logging.warning(f"Error loading existing feature analysis: {e}")
+    
+    # If not available or error loading, create new analysis
+    logging.info("Creating new feature analysis...")
+    return analyze_customer_features(
+        smb_df, 
+        products_df,
+        data_dict_path=DATA_DICT_PATH
+    )
+
 def list_smb_columns(smb_df: pd.DataFrame, output_path: str = "data/smb_columns.csv"):
     """
     List all SMB data columns and save them to a CSV file.
@@ -126,13 +157,12 @@ def main():
         logging.error(f"Failed to load SMB data: {e}")
         return
 
-    # 3. Analyze customer data to identify important features
+    # 3. Load or create feature analysis
     try:
-        logging.info("Analyzing customer data to identify important features...")
-        feature_analysis = analyze_customer_features(smb_df)
-        logging.info(f"Identified {feature_analysis['summary']['total_features_analyzed']} important features")
+        feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
+        logging.info(f"Using feature analysis with {feature_analysis['summary']['total_features_analyzed']} features")
     except Exception as e:
-        logging.error(f"Failed to analyze customer features: {e}")
+        logging.error(f"Failed to load or create feature analysis: {e}")
         return
 
     # 4. Prompt user for BUSINESS_ID
