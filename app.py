@@ -75,33 +75,46 @@ def main():
         if smb_row.empty:
             st.error(f"No SMB found with Business ID={business_id}")
             return
-        try:
-            smb_row = smb_row.iloc[0]
-            
-            # Create two columns for buttons
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("Without Reasoning"):
-                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
-                    rec_json = get_llm_response(prompt)
-                    cleaned = clean_json_response(rec_json)
-                    recommendations = json.loads(cleaned)
-                    st.success("Recommendations generated successfully!")
-                    st.json(recommendations)
-            
-            with col2:
-                if st.button("With Reasoning"):
-                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
-                    rec_json = get_llm_response(prompt)
-                    cleaned = clean_json_response(rec_json)
-                    recommendations = json.loads(cleaned)
-                    st.success("Recommendations generated successfully!")
-                    st.json(recommendations)
-                    
-        except Exception as e:
-            logging.error(f"Error generating recommendations: {e}")
-            st.error(f"Failed to generate recommendations: {e}")
+        smb_row = smb_row.iloc[0]
+        # Store in session state
+        st.session_state['smb_row'] = smb_row
+        st.session_state['products_df'] = products_df
+        st.session_state['feature_analysis'] = feature_analysis
+
+    # Only show the two buttons if we have the data in session state
+    if 'smb_row' in st.session_state and 'products_df' in st.session_state and 'feature_analysis' in st.session_state:
+        smb_row = st.session_state['smb_row']
+        products_df = st.session_state['products_df']
+        feature_analysis = st.session_state['feature_analysis']
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Without Reasoning"):
+                with st.spinner("Generating recommendations..."):
+                    try:
+                        prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
+                        rec_json = get_llm_response(prompt)
+                        cleaned = clean_json_response(rec_json)
+                        recommendations = json.loads(cleaned)
+                        st.success("Recommendations generated successfully!")
+                        st.json(recommendations)
+                    except Exception as e:
+                        logging.error(f"Error generating recommendations: {e}")
+                        st.error(f"Failed to generate recommendations: {e}")
+
+        with col2:
+            if st.button("With Reasoning"):
+                with st.spinner("Generating recommendations with reasoning..."):
+                    try:
+                        prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
+                        rec_json = get_llm_response(prompt)
+                        cleaned = clean_json_response(rec_json)
+                        recommendations = json.loads(cleaned)
+                        st.success("Recommendations generated successfully!")
+                        st.json(recommendations)
+                    except Exception as e:
+                        logging.error(f"Error generating recommendations: {e}")
+                        st.error(f"Failed to generate recommendations: {e}")
 
 if __name__ == "__main__":
     main() 
