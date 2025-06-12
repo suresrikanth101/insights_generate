@@ -77,12 +77,28 @@ def main():
             return
         try:
             smb_row = smb_row.iloc[0]
-            prompt = build_prompt(smb_row, products_df, feature_analysis)
-            rec_json = get_llm_response(prompt)
-            cleaned = clean_json_response(rec_json)
-            recommendations = json.loads(cleaned)
-            st.success("Recommendations generated successfully!")
-            st.json(recommendations)
+            
+            # Create two columns for buttons
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("Without Reasoning"):
+                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
+                    rec_json = get_llm_response(prompt)
+                    cleaned = clean_json_response(rec_json)
+                    recommendations = json.loads(cleaned)
+                    st.success("Recommendations generated successfully!")
+                    st.json(recommendations)
+            
+            with col2:
+                if st.button("With Reasoning"):
+                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
+                    rec_json = get_llm_response(prompt)
+                    cleaned = clean_json_response(rec_json)
+                    recommendations = json.loads(cleaned)
+                    st.success("Recommendations generated successfully!")
+                    st.json(recommendations)
+                    
         except Exception as e:
             logging.error(f"Error generating recommendations: {e}")
             st.error(f"Failed to generate recommendations: {e}")

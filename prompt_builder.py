@@ -2,7 +2,7 @@ import logging
 import json
 from typing import Dict
 
-def build_prompt(smb_row, products_df, feature_analysis: Dict):
+def build_prompt(smb_row, products_df, feature_analysis: Dict, with_reasoning: bool = False):
     """
     Build a prompt for product recommendations using important features identified by feature analyzer.
     
@@ -10,6 +10,7 @@ def build_prompt(smb_row, products_df, feature_analysis: Dict):
         smb_row: Series containing customer data
         products_df: DataFrame containing product information
         feature_analysis: Dictionary containing feature analysis results with scores and reasoning
+        with_reasoning: Boolean flag to include reasoning in the output JSON
     """
     logging.info(f"Building prompt for BUSINESS_ID={smb_row.get('BUSINESS_ID', '')}")
     
@@ -29,6 +30,36 @@ def build_prompt(smb_row, products_df, feature_analysis: Dict):
         product_list += f"   Description: {row['Description']}\n"
         product_list += f"   Key Features: {row['Key Features']}\n\n"
     
+    # Common analysis steps for both cases
+    analysis_steps = """
+**First, think step by step about:**
+1. What are the most important customer needs and context based on the profile?
+2. Which product features best match those needs?
+3. How would you rank the products for this customer and why?
+"""
+    
+    # Output format varies based on whether reasoning is requested
+    if with_reasoning:
+        output_format = """
+**Then, output the final JSON response in the following format (include a 'reasoning' field for each product):**
+{
+  "recommended_products": [
+    {"rank": 1, "product_name": "Product A", "reasoning": "Why this is best for the customer"},
+    ...
+  ]
+}
+"""
+    else:
+        output_format = """
+**Then, output only the final JSON response in the following format (no explanations in the JSON):**
+{
+  "recommended_products": [
+    {"rank": 1, "product_name": "Product A"},
+    ...
+  ]
+}
+"""
+    
     prompt = f"""
 NBX (Next Best Experience) product recommendation
 
@@ -38,19 +69,8 @@ You are an AI assistant for NBX (Next Best Experience) product recommendation. Y
 
 Your task is to analyze the customer profile, understand their likely needs and context, and return a ranked list of the products from most to least recommended.
 
-**First, think step by step about:**
-1. What are the most important customer needs and context based on the profile?
-2. Which product features best match those needs?
-3. How would you rank the products for this customer and why?
-
-**Then, output only the final JSON response in the following format (no explanations in the JSON):**
-{{
-  "recommended_products": [
-    {{"rank": 1, "product_name": "Product A"}},
-    {{"rank": 2, "product_name": "Product B"}},
-    {{"rank": 3, "product_name": "Product C"}}
-  ]
-}}
+{analysis_steps}
+{output_format}
 
 Customer Profile:
 {smb_profile}
