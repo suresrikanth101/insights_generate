@@ -68,23 +68,25 @@ def main():
 
     business_id = int(business_id)
 
-    col1, col2 = st.columns([1, 1])  # Make columns equally wide
+    # Load data ONCE
+    smb_df = load_data()
+    products_df = load_products()
+    if smb_df.empty or products_df.empty:
+        st.error("Failed to load necessary data. Please check logs.")
+        return
+    feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
+    smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
+    if smb_row.empty:
+        st.error(f"No SMB found with Business ID={business_id}")
+        return
+    smb_row = smb_row.iloc[0]
+
+    col1, col2 = st.columns([1, 1])
 
     with col1:
         if st.button("Get Recommendations (Without Reasoning)"):
             with st.spinner("Generating recommendations..."):
                 try:
-                    smb_df = load_data()
-                    products_df = load_products()
-                    if smb_df.empty or products_df.empty:
-                        st.error("Failed to load necessary data. Please check logs.")
-                        return
-                    feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
-                    smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
-                    if smb_row.empty:
-                        st.error(f"No SMB found with Business ID={business_id}")
-                        return
-                    smb_row = smb_row.iloc[0]
                     prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
                     rec_json = get_llm_response(prompt)
                     cleaned = clean_json_response(rec_json)
@@ -99,17 +101,6 @@ def main():
         if st.button("Get Recommendations (With Reasoning)"):
             with st.spinner("Generating recommendations with reasoning..."):
                 try:
-                    smb_df = load_data()
-                    products_df = load_products()
-                    if smb_df.empty or products_df.empty:
-                        st.error("Failed to load necessary data. Please check logs.")
-                        return
-                    feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
-                    smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
-                    if smb_row.empty:
-                        st.error(f"No SMB found with Business ID={business_id}")
-                        return
-                    smb_row = smb_row.iloc[0]
                     prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
                     rec_json = get_llm_response(prompt)
                     cleaned = clean_json_response(rec_json)
