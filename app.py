@@ -58,63 +58,67 @@ def main():
 
     business_id = st.text_input("Enter Business ID", value="")
 
-    if st.button("Generate Recommendations"):
-        if not business_id.isdigit():
-            st.error("Please enter a valid numeric Business ID.")
-            return
-        business_id = int(business_id)
-        smb_df = load_data()
-        products_df = load_products()
-        if smb_df.empty or products_df.empty:
-            st.error("Failed to load necessary data. Please check logs.")
-            return
-        # Load or create feature analysis
-        feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
-        # Filter SMB data for the given Business ID
-        smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
-        if smb_row.empty:
-            st.error(f"No SMB found with Business ID={business_id}")
-            return
-        smb_row = smb_row.iloc[0]
-        # Store in session state
-        st.session_state['smb_row'] = smb_row
-        st.session_state['products_df'] = products_df
-        st.session_state['feature_analysis'] = feature_analysis
+    if not business_id:
+        st.info("Please enter a Business ID to get started.")
+        return
 
-    # Only show the two buttons if we have the data in session state
-    if 'smb_row' in st.session_state and 'products_df' in st.session_state and 'feature_analysis' in st.session_state:
-        smb_row = st.session_state['smb_row']
-        products_df = st.session_state['products_df']
-        feature_analysis = st.session_state['feature_analysis']
+    if not business_id.isdigit():
+        st.error("Please enter a valid numeric Business ID.")
+        return
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Without Reasoning"):
-                with st.spinner("Generating recommendations..."):
-                    try:
-                        prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
-                        rec_json = get_llm_response(prompt)
-                        cleaned = clean_json_response(rec_json)
-                        recommendations = json.loads(cleaned)
-                        st.success("Recommendations generated successfully!")
-                        st.json(recommendations)
-                    except Exception as e:
-                        logging.error(f"Error generating recommendations: {e}")
-                        st.error(f"Failed to generate recommendations: {e}")
+    business_id = int(business_id)
 
-        with col2:
-            if st.button("With Reasoning"):
-                with st.spinner("Generating recommendations with reasoning..."):
-                    try:
-                        prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
-                        rec_json = get_llm_response(prompt)
-                        cleaned = clean_json_response(rec_json)
-                        recommendations = json.loads(cleaned)
-                        st.success("Recommendations generated successfully!")
-                        st.json(recommendations)
-                    except Exception as e:
-                        logging.error(f"Error generating recommendations: {e}")
-                        st.error(f"Failed to generate recommendations: {e}")
+    col1, col2 = st.columns([1, 1])  # Make columns equally wide
+
+    with col1:
+        if st.button("Get Recommendations (Without Reasoning)"):
+            with st.spinner("Generating recommendations..."):
+                try:
+                    smb_df = load_data()
+                    products_df = load_products()
+                    if smb_df.empty or products_df.empty:
+                        st.error("Failed to load necessary data. Please check logs.")
+                        return
+                    feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
+                    smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
+                    if smb_row.empty:
+                        st.error(f"No SMB found with Business ID={business_id}")
+                        return
+                    smb_row = smb_row.iloc[0]
+                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
+                    rec_json = get_llm_response(prompt)
+                    cleaned = clean_json_response(rec_json)
+                    recommendations = json.loads(cleaned)
+                    st.success("Recommendations generated successfully!")
+                    st.json(recommendations)
+                except Exception as e:
+                    logging.error(f"Error generating recommendations: {e}")
+                    st.error(f"Failed to generate recommendations: {e}")
+
+    with col2:
+        if st.button("Get Recommendations (With Reasoning)"):
+            with st.spinner("Generating recommendations with reasoning..."):
+                try:
+                    smb_df = load_data()
+                    products_df = load_products()
+                    if smb_df.empty or products_df.empty:
+                        st.error("Failed to load necessary data. Please check logs.")
+                        return
+                    feature_analysis = load_or_create_feature_analysis(smb_df, products_df)
+                    smb_row = smb_df[smb_df['BUSINESS_ID'] == business_id]
+                    if smb_row.empty:
+                        st.error(f"No SMB found with Business ID={business_id}")
+                        return
+                    smb_row = smb_row.iloc[0]
+                    prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=True)
+                    rec_json = get_llm_response(prompt)
+                    cleaned = clean_json_response(rec_json)
+                    recommendations = json.loads(cleaned)
+                    st.success("Recommendations generated successfully!")
+                    st.json(recommendations)
+                except Exception as e:
+                    logging.error(f"Error generating recommendations: {e}")
+                    st.error(f"Failed to generate recommendations: {e}")
 
 if __name__ == "__main__":
     main() 
