@@ -49,15 +49,14 @@ def load_or_create_feature_analysis(smb_df, products_df):
     logging.info("Creating new feature analysis...")
     return analyze_customer_features(smb_df, products_df, data_dict_path=DATA_DICT_PATH)
 
-def get_recommendations_with_reasoning(base_recommendations):
-    """Add reasoning to existing recommendations"""
-    prompt = f"""
-    Given these ranked product recommendations for a business:
-    {json.dumps(base_recommendations, indent=2)}
-
-    Please add reasoning for each recommendation, explaining why each product is recommended in this order.
-    Return the same JSON structure but with a 'reasoning' field added to each product.
+def get_recommendations_with_reasoning(smb_row, products_df, feature_analysis, base_recommendations):
     """
+    Add reasoning to existing recommendations, providing full context using prompt_builder.
+    """
+    prompt = build_prompt(
+        smb_row, products_df, feature_analysis,
+        add_reasoning_to_existing=base_recommendations
+    )
     rec_json = get_llm_response(prompt)
     cleaned = clean_json_response(rec_json)
     return json.loads(cleaned)
@@ -110,7 +109,7 @@ def main():
             with st.spinner("Generating recommendations..."):
                 try:
                     if st.session_state['recommendations_without_reasoning'] is None:
-                        prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
+                        prompt = build_prompt(smb_row, products_df, feature_analysis)
                         rec_json = get_llm_response(prompt)
                         cleaned = clean_json_response(rec_json)
                         recommendations = json.loads(cleaned)
@@ -132,21 +131,33 @@ def main():
                     else:
                         # If we don't have without_reasoning, generate it first
                         if st.session_state['recommendations_without_reasoning'] is None:
-                            prompt = build_prompt(smb_row, products_df, feature_analysis, with_reasoning=False)
+                            prompt = build_prompt(smb_row, products_df, feature_analysis)
                             rec_json = get_llm_response(prompt)
                             cleaned = clean_json_response(rec_json)
                             base_recommendations = json.loads(cleaned)
                             st.session_state['recommendations_without_reasoning'] = base_recommendations
                         else:
                             base_recommendations = st.session_state['recommendations_without_reasoning']
-                        # Now add reasoning
-                        recommendations = get_recommendations_with_reasoning(base_recommendations)
+                        # Now add reasoning with full context
+                        recommendations = get_recommendations_with_reasoning(
+                            smb_row, products_df, feature_analysis, base_recommendations
+                        )
                         st.session_state['recommendations_with_reasoning'] = recommendations
                     st.success("Recommendations with reasoning generated successfully!")
                     st.json(recommendations)
                 except Exception as e:
                     logging.error(f"Error generating recommendations: {e}")
                     st.error(f"Failed to generate recommendations: {e}")
+
+    # Always show the most recent results for both types if they exist
+    st.markdown("---")
+    if st.session_state.get('recommendations_without_reasoning'):
+        st.subheader("Last Recommendations (Without Reasoning)")
+        st.json(st.session_state['recommendations_without_reasoning'])
+
+    if st.session_state.get('recommendations_with_reasoning'):
+        st.subheader("Last Recommendations (With Reasoning)")
+        st.json(st.session_state['recommendations_with_reasoning'])
 
 if __name__ == "__main__":
     main() 
