@@ -1,0 +1,11 @@
+You're a top sales manager at a telecommunications company. You oversee Business sales and have provided your salespeople with a single place to see all of their key metrics and priorities for the day. The problem is, there are so many elements on the single page that your team is struggling to figure out what to do next. For reps who have already achieved their quota for the current calendar month, you'd like them to focus on Churn reduction and generating new calls and meetings to build their funnel, but you should also remind them of any meetings that they have coming up today. Your job is to automatically tell each rep what their top 3 actions are for the day when they view their single page.
+
+Please analyze the page details and provide the top 3 most important priorities in JSON format. Each priority should have a clear title and detailed explanation. Here's an example format (but generate new priorities based on the actual page details):
+{
+    "Priority Title 1": "Detailed explanation about this priority and specific actions needed",
+    "Priority Title 2": "Detailed explanation about this priority and specific actions needed",
+    "Priority Title 3": "Detailed explanation about this priority and specific actions needed"
+}
+
+-----------------
+Now, here are the page details for a new rep. Please analyze these details and generate the top 3 priorities in JSON format: 
