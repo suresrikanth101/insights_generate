@@ -204,25 +204,23 @@ class CombinedScraper:
             return content_type == 'application/pdf'
 
     def _save_html_file(self, content: str, content_name: str) -> str:
-        """Save HTML content to a file and return the filepath."""
+        """Save HTML content to a file and return the filepath. Overwrites if file exists."""
         uid = str(uuid.uuid4())
         filename = f"{content_name}_{uid}.html".replace(" ", "_")
         filepath = os.path.join(self.html_dir, filename)
-        
+        # Overwrite if file exists (default behavior of 'w' mode)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
-            
         return filepath
 
     def _save_pdf_file(self, content: bytes, content_name: str) -> str:
-        """Save PDF content to a file and return the filepath."""
+        """Save PDF content to a file and return the filepath. Overwrites if file exists."""
         uid = str(uuid.uuid4())
         filename = f"{content_name}_{uid}.pdf".replace(" ", "_")
         filepath = os.path.join(self.pdf_dir, filename)
-        
+        # Overwrite if file exists (default behavior of 'wb' mode)
         with open(filepath, "wb") as f:
             f.write(content)
-            
         return filepath
 
     def _handle_pdf(self, response: requests.Response, url: str, content_name: str) -> Dict:
@@ -297,12 +295,11 @@ class CombinedScraper:
             }
 
     def _scrape_url(self, content_entry: Dict[str, str]) -> Optional[Dict]:
-        """Scrape a single URL with error handling and rate limiting."""
+        """Scrape a single URL with error handling and rate limiting, handling HTML, PDF, and PPT/PPTX."""
         content_name = content_entry['content_name']
         url = content_entry['url']
-        
         logging.info(f"Starting to process URL: {url} for content: {content_name}")
-        
+
         try:
             is_allowed, robots_status = self._is_allowed_by_robots(url)
             if not is_allowed:
@@ -311,26 +308,20 @@ class CombinedScraper:
 
             logging.info(f"Rate limiting: Waiting between 1-3 seconds before accessing {url}")
             time.sleep(random.uniform(1, 3))
-            
+
             logging.info(f"Making GET request to: {url}")
             response = self.session.get(url, headers=self.headers, timeout=10)
             response.raise_for_status()
-            logging.info(f"Successfully received response from {url} with status code: {response.status_code}")
-            
-            if self._is_pdf_url(url):
-                logging.info(f"Detected PDF URL: {url}")
-                scraped_data = self._handle_pdf(response, url, content_name)
-                scraped_data['type'] = 'pdf'
-                logging.info(f"Successfully processed PDF from {url}")
-            else:
-                logging.info(f"Processing HTML content from: {url}")
+            content_type = response.headers.get('content-type', '').lower()
+
+            # 1. HTML
+            if url.lower().endswith('.html') or 'text/html' in content_type:
+                logging.info(f"Detected HTML content at: {url}")
                 html_filepath = self._save_html_file(response.text, content_name)
                 logging.info(f"Saved HTML content to: {html_filepath}")
-                
                 soup = BeautifulSoup(response.text, 'html.parser')
                 page_metadata = self._extract_page_metadata(soup)
                 logging.info(f"Extracted metadata from HTML: {page_metadata}")
-                
                 scraped_data = {
                     'title': soup.title.string if soup.title else 'No title found',
                     'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')])[:5000],
@@ -344,12 +335,66 @@ class CombinedScraper:
                     'type': 'html'
                 }
                 logging.info(f"Successfully processed HTML from {url}")
-            
+
+            # 2. PDF
+            elif url.lower().endswith('.pdf') or 'application/pdf' in content_type:
+                logging.info(f"Detected PDF content at: {url}")
+                scraped_data = self._handle_pdf(response, url, content_name)
+                scraped_data['type'] = 'pdf'
+                logging.info(f"Successfully processed PDF from {url}")
+
+            # 3. PPT/PPTX
+            elif url.lower().endswith('.ppt') or url.lower().endswith('.pptx'):
+                pdf_url = url.rsplit('.', 1)[0] + '.pdf'
+                logging.info(f"Detected PPT/PPTX. Trying as PDF: {pdf_url}")
+                try:
+                    pdf_response = self.session.get(pdf_url, headers=self.headers, timeout=10)
+                    pdf_response.raise_for_status()
+                    scraped_data = self._handle_pdf(pdf_response, pdf_url, content_name)
+                    scraped_data['type'] = 'pdf'
+                    logging.info(f"Successfully processed PDF from PPT URL: {pdf_url}")
+                except Exception as ppt_pdf_error:
+                    logging.error(f"Failed to process PPT as PDF for {url}: {ppt_pdf_error}")
+                    return None
+
+            # 4. Fallback: Try as HTML, then as PDF by appending .pdf
+            else:
+                try:
+                    logging.info(f"Unknown extension/content-type for {url}. Trying as HTML.")
+                    html_filepath = self._save_html_file(response.text, content_name)
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    page_metadata = self._extract_page_metadata(soup)
+                    scraped_data = {
+                        'title': soup.title.string if soup.title else 'No title found',
+                        'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')])[:5000],
+                        'links': [a.get('href') for a in soup.find_all('a', href=True)],
+                        'content_type': 'text/html',
+                        'last_modified': page_metadata['last_modified'],
+                        'updated_time': page_metadata['updated_time'],
+                        'published_date': page_metadata['published_date'],
+                        'saved_filepath': html_filepath,
+                        'filename': os.path.basename(html_filepath),
+                        'type': 'html'
+                    }
+                    logging.info(f"Successfully processed fallback HTML from {url}")
+                except Exception as html_error:
+                    logging.warning(f"Failed to process as HTML for {url}: {html_error}. Trying as PDF by appending .pdf.")
+                    pdf_url = url + '.pdf'
+                    try:
+                        pdf_response = self.session.get(pdf_url, headers=self.headers, timeout=10)
+                        pdf_response.raise_for_status()
+                        scraped_data = self._handle_pdf(pdf_response, pdf_url, content_name)
+                        scraped_data['type'] = 'pdf'
+                        logging.info(f"Successfully processed fallback PDF from {pdf_url}")
+                    except Exception as fallback_pdf_error:
+                        logging.error(f"Failed to process fallback PDF for {pdf_url}: {fallback_pdf_error}")
+                        return None
+
             scraped_data['robots_status'] = robots_status
             scraped_data['final_url'] = url
             logging.info(f"Successfully completed processing {url} for content '{content_name}'")
             return scraped_data
-            
+
         except requests.exceptions.RequestException as error:
             logging.error(f"Request failed for URL {url} (content: '{content_name}'): {str(error)}")
             return None
@@ -357,79 +402,72 @@ class CombinedScraper:
             logging.error(f"Unexpected error processing {url} (content: '{content_name}'): {str(error)}")
             return None
 
-    def scrape_all(self, max_workers: int = 5) -> List[Dict]:
-        """Scrape all URLs using multiple threads."""
+    def scrape_all(self) -> List[Dict]:
+        """Scrape all URLs sequentially (one at a time)."""
         scraped_results = []
         total_urls = len(self.content_data)
         successful_urls = 0
         failed_urls = 0
-        
-        logging.info(f"Starting to scrape {total_urls} URLs with {max_workers} workers")
-        
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            scraping_tasks = {
-                executor.submit(self._scrape_url, content_entry): content_entry 
-                for content_entry in self.content_data
-            }
-            
-            for scraping_task in scraping_tasks:
-                content_entry = scraping_tasks[scraping_task]
-                try:
-                    scraped_data = scraping_task.result()
-                    if scraped_data:
-                        successful_urls += 1
-                        result = {
-                            'content_name': content_entry['content_name'],
-                            'url': content_entry['url'],
-                            'content': scraped_data
-                        }
-                        scraped_results.append(result)
-                        logging.info(f"Successfully scraped {content_entry['url']} ({successful_urls}/{total_urls} successful)")
-                    else:
-                        failed_urls += 1
-                        logging.warning(f"Failed to scrape {content_entry['url']} ({failed_urls}/{total_urls} failed)")
-                except Exception as e:
+
+        logging.info(f"Starting to scrape {total_urls} URLs sequentially")
+
+        for content_entry in self.content_data:
+            try:
+                scraped_data = self._scrape_url(content_entry)
+                if scraped_data:
+                    successful_urls += 1
+                    result = {
+                        'content_name': content_entry['content_name'],
+                        'url': content_entry['url'],
+                        'content': scraped_data
+                    }
+                    scraped_results.append(result)
+                    logging.info(f"Successfully scraped {content_entry['url']} ({successful_urls}/{total_urls} successful)")
+                else:
                     failed_urls += 1
-                    logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
-        
+                    logging.warning(f"Failed to scrape {content_entry['url']} ({failed_urls}/{total_urls} failed)")
+            except Exception as e:
+                failed_urls += 1
+                logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
+
         # Log summary
         logging.info(f"Scraping completed:")
         logging.info(f"Total URLs processed: {total_urls}")
         logging.info(f"Successful scrapes: {successful_urls}")
         logging.info(f"Failed scrapes: {failed_urls}")
         logging.info(f"Success rate: {(successful_urls/total_urls)*100:.2f}%")
-        
+
         # Save all results to a single JSON file
         self._save_json_results(scraped_results)
         return scraped_results
 
     def _save_json_results(self, scraped_results: List[Dict]) -> None:
-        """Save all scraped results to a single JSON file."""
+        """Save all scraped results to a single JSON file, replacing the file if it exists."""
         try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            json_filename = f"scraped_results_{timestamp}.json"
+            json_filename = "scraped_results.json"
             json_filepath = os.path.join(self.output_dir, json_filename)
-            
+
             logging.info(f"Preparing to save {len(scraped_results)} results to JSON file")
-            
+
             # Convert datetime objects to strings for JSON serialization
             json_data = []
             for result in scraped_results:
                 result_copy = result.copy()
                 content = result_copy['content']
-                
+
                 # Ensure all date fields are strings
                 for date_field in ['last_modified', 'updated_time', 'published_date']:
                     if content.get(date_field) and not isinstance(content[date_field], str):
                         content[date_field] = str(content[date_field])
-                
+
                 json_data.append(result_copy)
-            
+
+            # Overwrite the file if it exists
             with open(json_filepath, 'w', encoding='utf-8') as json_file:
                 json.dump(json_data, json_file, indent=2, ensure_ascii=False)
-            
+
             logging.info(f"Successfully saved results to JSON file: {json_filepath}")
-            
+
         except Exception as error:
             logging.error(f"Error saving JSON results: {str(error)}")
 
