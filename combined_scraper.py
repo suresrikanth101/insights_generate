@@ -11,6 +11,7 @@ from typing import List, Dict, Optional, Tuple
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 from datetime import datetime
+from pathlib import Path
 
 # Third-party imports
 import pandas as pd
@@ -30,16 +31,18 @@ logging.basicConfig(
 )
 
 class CombinedScraper:
-    def __init__(self, excel_path: str, output_dir: str = 'scraped_data'):
+    def __init__(self, excel_path: str, output_dir: str = 'scraped_data', folder_path: str = None):
         """
         Initialize the web scraper with Excel file path and output directory.
         
         Args:
             excel_path (str): Path to the Excel file containing URLs
             output_dir (str): Directory to save scraped content
+            folder_path (str, optional): Path to folder containing local files to process
         """
         self.excel_path = excel_path
         self.output_dir = output_dir
+        self.folder_path = folder_path
         self.html_dir = os.path.join(output_dir, "html")
         self.pdf_dir = os.path.join(output_dir, "pdf")
         
@@ -56,6 +59,9 @@ class CombinedScraper:
         
         # Load URLs and content names from Excel
         self.content_data = self._load_content_data()
+        
+        # Load local files from folder if specified
+        self.local_files_data = self._load_local_files_data() if folder_path else []
         
     def _load_content_data(self) -> List[Dict[str, str]]:
         """Load content names and URLs from Excel file."""
@@ -82,6 +88,33 @@ class CombinedScraper:
         except Exception as e:
             logging.error(f"Error loading data from Excel: {str(e)}")
             raise
+
+    def _load_local_files_data(self) -> List[Dict[str, str]]:
+        """Load local files from the specified folder."""
+        if not self.folder_path or not os.path.exists(self.folder_path):
+            logging.warning(f"Folder path {self.folder_path} does not exist or is not specified")
+            return []
+        
+        local_files = []
+        supported_extensions = {'.pdf', '.html', '.htm', '.ppt', '.pptx', '.doc', '.docx', '.txt'}
+        
+        try:
+            for file_path in Path(self.folder_path).rglob('*'):
+                if file_path.is_file() and file_path.suffix.lower() in supported_extensions:
+                    # Use filename without extension as content name
+                    content_name = file_path.stem
+                    local_files.append({
+                        'content_name': content_name,
+                        'file_path': str(file_path),
+                        'file_type': file_path.suffix.lower()
+                    })
+            
+            logging.info(f"Successfully loaded {len(local_files)} local files from folder {self.folder_path}")
+            return local_files
+            
+        except Exception as e:
+            logging.error(f"Error loading local files from folder {self.folder_path}: {str(e)}")
+            return []
 
     def _get_robot_parser(self, domain: str) -> RobotFileParser:
         """Get or create a RobotFileParser for a domain."""
@@ -402,40 +435,268 @@ class CombinedScraper:
             logging.error(f"Unexpected error processing {url} (content: '{content_name}'): {str(error)}")
             return None
 
+    def _handle_local_text(self, file_path: str, content_name: str) -> Dict:
+        """Handle local text file content."""
+        try:
+            logging.info(f"Processing local text file: {file_path}")
+            
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text_content = file.read()
+            
+            # Get file modification time
+            file_stat = os.stat(file_path)
+            file_mod_time = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            
+            return {
+                'title': os.path.basename(file_path),
+                'text': text_content,
+                'links': [],
+                'content_type': 'text/plain',
+                'last_modified': file_mod_time,
+                'updated_time': None,
+                'published_date': None,
+                'saved_filepath': file_path,
+                'filename': os.path.basename(file_path),
+                'original_filepath': file_path
+            }
+            
+        except Exception as error:
+            logging.error(f"Error processing local text file {file_path}: {str(error)}")
+            return {
+                'title': 'Error processing text file',
+                'text': f'Error: {str(error)}',
+                'links': [],
+                'content_type': 'text/plain',
+                'last_modified': None,
+                'updated_time': None,
+                'published_date': None,
+                'saved_filepath': None,
+                'filename': None,
+                'original_filepath': file_path
+            }
+
+    def _process_local_file(self, file_entry: Dict[str, str]) -> Optional[Dict]:
+        """Process a single local file using existing PDF and HTML processing methods."""
+        content_name = file_entry['content_name']
+        file_path = file_entry['file_path']
+        file_type = file_entry['file_type']
+        
+        logging.info(f"Processing local file: {file_path} (type: {file_type})")
+        
+        try:
+            if file_type == '.pdf':
+                # Use existing PDF processing logic directly
+                logging.info(f"Processing local PDF file: {file_path}")
+                
+                # Read the PDF file content
+                with open(file_path, 'rb') as file:
+                    pdf_content = file.read()
+                
+                if not pdf_content:
+                    raise ValueError("Empty PDF content")
+                
+                # Save PDF to output directory
+                pdf_filepath = self._save_pdf_file(pdf_content, content_name)
+                
+                # Extract text using pdfplumber (same as _handle_pdf)
+                extracted_text = ""
+                with pdfplumber.open(pdf_filepath) as pdf:
+                    for page in pdf.pages:
+                        text = page.extract_text()
+                        if text:
+                            extracted_text += text + "\n"
+                
+                # Get PDF metadata using PyPDF2 (same as _handle_pdf)
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_content))
+                pdf_metadata = pdf_reader.metadata if pdf_reader.metadata else {}
+                
+                # Extract dates from PDF metadata (same as _handle_pdf)
+                creation_date = pdf_metadata.get('/CreationDate', None)
+                mod_date = pdf_metadata.get('/ModDate', None)
+                
+                if creation_date:
+                    try:
+                        creation_date = creation_date.replace('D:', '')[:14]
+                        creation_date = datetime.strptime(creation_date, '%Y%m%d%H%M%S').strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        creation_date = None
+                
+                if mod_date:
+                    try:
+                        mod_date = mod_date.replace('D:', '')[:14]
+                        mod_date = datetime.strptime(mod_date, '%Y%m%d%H%M%S').strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        mod_date = None
+                
+                # Get file modification time as fallback for last_modified if not available
+                if not mod_date:
+                    file_stat = os.stat(file_path)
+                    file_mod_time = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                    mod_date = file_mod_time
+                
+                scraped_data = {
+                    'title': pdf_metadata.get('/Title', os.path.basename(file_path)),
+                    'text': extracted_text,
+                    'links': [],
+                    'content_type': 'application/pdf',
+                    'last_modified': mod_date,
+                    'updated_time': None,
+                    'published_date': creation_date,
+                    'total_pages': len(pdf_reader.pages),
+                    'saved_filepath': pdf_filepath,
+                    'filename': os.path.basename(pdf_filepath),
+                    'original_filepath': file_path,
+                    'type': 'pdf'
+                }
+                
+            elif file_type in ['.html', '.htm']:
+                # Use existing HTML processing logic from _scrape_url
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    html_content = file.read()
+                
+                # Save HTML to output directory using existing _save_html_file method
+                html_filepath = self._save_html_file(html_content, content_name)
+                
+                # Use existing HTML processing logic from _scrape_url
+                soup = BeautifulSoup(html_content, 'html.parser')
+                page_metadata = self._extract_page_metadata(soup)
+                
+                # Get file modification time as fallback for last_modified
+                file_stat = os.stat(file_path)
+                file_mod_time = datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                
+                scraped_data = {
+                    'title': soup.title.string if soup.title else os.path.basename(file_path),
+                    'text': ' '.join([p.get_text().strip() for p in soup.find_all('p')])[:5000],
+                    'links': [a.get('href') for a in soup.find_all('a', href=True)],
+                    'content_type': 'text/html',
+                    'last_modified': page_metadata['last_modified'] or file_mod_time,
+                    'updated_time': page_metadata['updated_time'],
+                    'published_date': page_metadata['published_date'],
+                    'saved_filepath': html_filepath,
+                    'filename': os.path.basename(html_filepath),
+                    'original_filepath': file_path,
+                    'type': 'html'
+                }
+                
+            elif file_type == '.txt':
+                scraped_data = self._handle_local_text(file_path, content_name)
+                scraped_data['type'] = 'text'
+            elif file_type in ['.ppt', '.pptx']:
+                # For PPT files, we'll try to extract basic info
+                logging.info(f"PPT/PPTX files not fully supported yet: {file_path}")
+                scraped_data = {
+                    'title': os.path.basename(file_path),
+                    'text': f'PPT/PPTX file: {os.path.basename(file_path)} - Content extraction not implemented',
+                    'links': [],
+                    'content_type': 'application/vnd.ms-powerpoint' if file_type == '.ppt' else 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'last_modified': datetime.fromtimestamp(os.stat(file_path).st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                    'updated_time': None,
+                    'published_date': None,
+                    'saved_filepath': file_path,
+                    'filename': os.path.basename(file_path),
+                    'original_filepath': file_path,
+                    'type': 'ppt'
+                }
+            elif file_type in ['.doc', '.docx']:
+                # For DOC files, we'll try to extract basic info
+                logging.info(f"DOC/DOCX files not fully supported yet: {file_path}")
+                scraped_data = {
+                    'title': os.path.basename(file_path),
+                    'text': f'DOC/DOCX file: {os.path.basename(file_path)} - Content extraction not implemented',
+                    'links': [],
+                    'content_type': 'application/msword' if file_type == '.doc' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'last_modified': datetime.fromtimestamp(os.stat(file_path).st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+                    'updated_time': None,
+                    'published_date': None,
+                    'saved_filepath': file_path,
+                    'filename': os.path.basename(file_path),
+                    'original_filepath': file_path,
+                    'type': 'doc'
+                }
+            else:
+                logging.warning(f"Unsupported file type: {file_type} for file {file_path}")
+                return None
+            
+            scraped_data['robots_status'] = 'Local file - no robots.txt check needed'
+            scraped_data['final_url'] = f'file://{file_path}'
+            
+            logging.info(f"Successfully processed local file: {file_path}")
+            return scraped_data
+            
+        except Exception as error:
+            logging.error(f"Error processing local file {file_path}: {str(error)}")
+            return None
+
     def scrape_all(self) -> List[Dict]:
-        """Scrape all URLs sequentially (one at a time)."""
+        """Scrape all URLs and process all local files sequentially."""
         scraped_results = []
         total_urls = len(self.content_data)
+        total_files = len(self.local_files_data)
         successful_urls = 0
         failed_urls = 0
+        successful_files = 0
+        failed_files = 0
 
-        logging.info(f"Starting to scrape {total_urls} URLs sequentially")
+        logging.info(f"Starting to scrape {total_urls} URLs and process {total_files} local files")
 
-        for content_entry in self.content_data:
-            try:
-                scraped_data = self._scrape_url(content_entry)
-                if scraped_data:
-                    successful_urls += 1
-                    result = {
-                        'content_name': content_entry['content_name'],
-                        'url': content_entry['url'],
-                        'content': scraped_data
-                    }
-                    scraped_results.append(result)
-                    logging.info(f"Successfully scraped {content_entry['url']} ({successful_urls}/{total_urls} successful)")
-                else:
+        # Process URLs from Excel
+        if total_urls > 0:
+            logging.info(f"Processing {total_urls} URLs from Excel file")
+            for content_entry in self.content_data:
+                try:
+                    scraped_data = self._scrape_url(content_entry)
+                    if scraped_data:
+                        successful_urls += 1
+                        result = {
+                            'content_name': content_entry['content_name'],
+                            'url': content_entry['url'],
+                            'content': scraped_data,
+                            'source': 'url'
+                        }
+                        scraped_results.append(result)
+                        logging.info(f"Successfully scraped {content_entry['url']} ({successful_urls}/{total_urls} successful)")
+                    else:
+                        failed_urls += 1
+                        logging.warning(f"Failed to scrape {content_entry['url']} ({failed_urls}/{total_urls} failed)")
+                except Exception as e:
                     failed_urls += 1
-                    logging.warning(f"Failed to scrape {content_entry['url']} ({failed_urls}/{total_urls} failed)")
-            except Exception as e:
-                failed_urls += 1
-                logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
+                    logging.error(f"Error processing {content_entry['url']} for content '{content_entry['content_name']}': {str(e)}")
+
+        # Process local files from folder
+        if total_files > 0:
+            logging.info(f"Processing {total_files} local files from folder")
+            for file_entry in self.local_files_data:
+                try:
+                    scraped_data = self._process_local_file(file_entry)
+                    if scraped_data:
+                        successful_files += 1
+                        result = {
+                            'content_name': file_entry['content_name'],
+                            'file_path': file_entry['file_path'],
+                            'content': scraped_data,
+                            'source': 'local_file'
+                        }
+                        scraped_results.append(result)
+                        logging.info(f"Successfully processed {file_entry['file_path']} ({successful_files}/{total_files} successful)")
+                    else:
+                        failed_files += 1
+                        logging.warning(f"Failed to process {file_entry['file_path']} ({failed_files}/{total_files} failed)")
+                except Exception as e:
+                    failed_files += 1
+                    logging.error(f"Error processing {file_entry['file_path']} for content '{file_entry['content_name']}': {str(e)}")
 
         # Log summary
-        logging.info(f"Scraping completed:")
-        logging.info(f"Total URLs processed: {total_urls}")
-        logging.info(f"Successful scrapes: {successful_urls}")
-        logging.info(f"Failed scrapes: {failed_urls}")
-        logging.info(f"Success rate: {(successful_urls/total_urls)*100:.2f}%")
+        total_processed = total_urls + total_files
+        total_successful = successful_urls + successful_files
+        total_failed = failed_urls + failed_files
+        
+        logging.info(f"Processing completed:")
+        logging.info(f"URLs - Total: {total_urls}, Successful: {successful_urls}, Failed: {failed_urls}")
+        logging.info(f"Local Files - Total: {total_files}, Successful: {successful_files}, Failed: {failed_files}")
+        logging.info(f"Overall - Total: {total_processed}, Successful: {total_successful}, Failed: {total_failed}")
+        if total_processed > 0:
+            logging.info(f"Overall success rate: {(total_successful/total_processed)*100:.2f}%")
 
         # Save all results to a single JSON file
         self._save_json_results(scraped_results)
@@ -473,10 +734,26 @@ class CombinedScraper:
 
 def main():
     # Example usage
-    logging.info("Starting web scraper")
-    scraper = CombinedScraper('websites.xlsx')
+    logging.info("Starting combined scraper (URLs + local files)")
+    
+    # Initialize scraper with Excel file and optional folder path
+    excel_path = 'websites.xlsx'
+    folder_path = 'documents'  # Optional: path to folder containing local files
+    
+    # Check if folder exists
+    if folder_path and not os.path.exists(folder_path):
+        logging.warning(f"Folder {folder_path} does not exist. Creating it for demonstration.")
+        os.makedirs(folder_path, exist_ok=True)
+    
+    scraper = CombinedScraper(excel_path, folder_path=folder_path)
     results = scraper.scrape_all()
-    logging.info(f"Scraping completed. Successfully scraped {len(results)} URLs.")
+    
+    # Count results by source
+    url_results = [r for r in results if r.get('source') == 'url']
+    file_results = [r for r in results if r.get('source') == 'local_file']
+    
+    logging.info(f"Processing completed. Successfully processed {len(url_results)} URLs and {len(file_results)} local files.")
+    logging.info(f"Total results: {len(results)}")
 
 if __name__ == "__main__":
     main() 
