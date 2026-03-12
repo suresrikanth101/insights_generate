@@ -1,0 +1,141 @@
+﻿<mxfile host="65bd71144e">
+    <diagram id="hotspot-image-based" name="AWS Architecture (Image Based)">
+        <mxGraphModel dx="1532" dy="1312" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="ui-interface" value="Hotspot &amp; Damage&#xa;Widget (React)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+                    <mxGeometry x="210" y="270" width="160" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="aws-account" value="TPS AWS Account" style="swimlane;rounded=1;arcSize=2;startSize=28;fillColor=#fffde7;strokeColor=#F9A825;fontStyle=1;fontSize=12;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="60" width="1020" height="670" as="geometry"/>
+                </mxCell>
+                <mxCell id="cloudfront" value="CloudFront CDN" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#8C4FFF;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="aws-account" vertex="1">
+                    <mxGeometry x="80" y="130" width="56" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="restapi" value="REST API&#xa;(pre-signed URL + Read)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#E7157B;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.api_gateway;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="aws-account" vertex="1">
+                    <mxGeometry x="240" y="130" width="56" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="pipeline" value="Lambda&#xa;(S3 Event Trigger)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#ED7100;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.lambda;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="aws-account" vertex="1">
+                    <mxGeometry x="350" y="210" width="60" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="step-functions" value="Step Functions&#xa;(Orchestrator)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#DD6B10;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.step_functions;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="aws-account">
+                    <mxGeometry x="510" y="210" width="60" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-group" value="Data &amp; Storage" style="swimlane;rounded=1;arcSize=4;startSize=26;fillColor=#fff8e1;strokeColor=#F9A825;fontStyle=1;fontSize=11;strokeWidth=2;" parent="aws-account" vertex="1">
+                    <mxGeometry x="740" y="38" width="260" height="400" as="geometry"/>
+                </mxCell>
+                <mxCell id="image-store" value="Image Store (S3)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#7AA116;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="data-group" vertex="1">
+                    <mxGeometry x="91" y="82" width="56" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="hotspot-meta" value="Hotspot Metadata&#xa;(DynamoDB)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C7131F;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="data-group" vertex="1">
+                    <mxGeometry x="91" y="182" width="56" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="meta-store" value="Metadata Store&#xa;(DynamoDB)" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#C7131F;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=0;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.dynamodb;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="data-group" vertex="1">
+                    <mxGeometry x="91" y="302" width="56" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="aiml-group" value="AI &amp; ML Services" style="swimlane;rounded=1;arcSize=4;startSize=26;fillColor=#f3e5f5;strokeColor=#9673a6;fontStyle=1;fontSize=11;strokeWidth=2;" parent="aws-account" vertex="1">
+                    <mxGeometry x="50" y="420" width="680" height="210" as="geometry"/>
+                </mxCell>
+                <mxCell id="bedrock-core" value="Amazon Bedrock&#xa;Agentic Core" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;strokeColor=none;fillColor=#01A88D;labelBackgroundColor=#ffffff;align=center;html=1;fontSize=10;fontStyle=1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.bedrock;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;" parent="aiml-group" vertex="1">
+                    <mxGeometry x="45" y="67" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="mcp-tool" value="MCP Tool Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede7f6;strokeColor=#9673a6;fontSize=10;fontStyle=1;" parent="aiml-group" vertex="1">
+                    <mxGeometry x="270" y="75" width="150" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="vector-db" value="Vector DB&#xa;(OpenSearch)" style="outlineConnect=0;fontColor=#232F3E;fillColor=#8C4FFF;strokeColor=#ffffff;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=10;fontStyle=1;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticsearch_service;" parent="aiml-group" vertex="1">
+                    <mxGeometry x="550" y="67" width="60" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" value="invoke tools" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;strokeWidth=2;fontSize=10;" parent="aiml-group" source="bedrock-core" target="mcp-tool" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" value="RAG results" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#8C4FFF;strokeWidth=2;fontSize=10;" parent="aiml-group" source="vector-db" target="mcp-tool" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e14" value="embed / query" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#8C4FFF;strokeWidth=2;fontSize=10;entryX=0.417;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;" parent="aiml-group" edge="1" target="vector-db" source="bedrock-core">
+                    <mxGeometry x="0.0159" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="80" y="180"/>
+                            <mxPoint x="575" y="180"/>
+                        </Array>
+                        <mxPoint x="575" y="140" as="targetPoint"/>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e3" value="get pre-signed URL" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#8C4FFF;strokeWidth=2;fontSize=10;" parent="aws-account" source="cloudfront" target="restapi" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_trigger" value="trigger" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#DD6B10;strokeWidth=2;fontSize=10;" edge="1" parent="aws-account" source="pipeline" target="step-functions">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_sf_store" value="store reports &amp; metadata" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#F9A825;strokeWidth=2;fontSize=10;fontStyle=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="aws-account" source="step-functions">
+                    <mxGeometry x="0.0698" y="30" relative="1" as="geometry">
+                        <mxPoint x="740" y="240" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="570" y="240"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e17" value="serve hotspot data" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#8C4FFF;strokeWidth=2;dashed=1;fontSize=10;" parent="aws-account" source="cloudfront" target="hotspot-meta" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="160" y="180"/>
+                            <mxPoint x="160" y="310"/>
+                            <mxPoint x="780" y="310"/>
+                            <mxPoint x="780" y="248"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e9" value="invoke AI agent" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#9673a6;strokeWidth=2;fontSize=10;" parent="aws-account" source="step-functions" target="bedrock-core" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="590" y="260"/>
+                            <mxPoint x="590" y="350"/>
+                            <mxPoint x="130" y="350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e12" value="read / write" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#C7131F;strokeWidth=2;fontSize=10;startArrow=block;startFill=1;endArrow=block;endFill=1;" parent="aws-account" source="meta-store" target="mcp-tool" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="395" y="380"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_s3upload" value="direct upload&#xa;(pre-signed URL)" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#7AA116;strokeWidth=2;fontSize=10;fontStyle=1;dashed=1;" edge="1" parent="aws-account" target="image-store">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-60" y="225" as="sourcePoint"/>
+                        <mxPoint x="850" y="60" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="30" y="225"/>
+                            <mxPoint x="30" y="90"/>
+                            <mxPoint x="850" y="90"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="external-group" value="External AI" style="swimlane;rounded=1;arcSize=6;startSize=26;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="750" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gemini" value="Google Gemini API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9ffe0;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="external-group">
+                    <mxGeometry x="15" y="34" width="170" height="38" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="load / request" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;strokeWidth=2;fontSize=10;" parent="1" source="ui-interface" target="cloudfront" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_s3event" value="S3 Event Notification" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#DD6B10;strokeWidth=2;fontSize=10;fontStyle=1;dashed=1;" edge="1" parent="1" source="image-store" target="pipeline">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e13" value="external model call" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;dashed=1;fontSize=10;" parent="1" source="bedrock-core" target="gemini" edge="1">
+                    <mxGeometry x="0.0742" y="50" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="490" y="597"/>
+                            <mxPoint x="490" y="833"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
