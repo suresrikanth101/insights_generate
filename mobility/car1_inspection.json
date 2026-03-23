@@ -1,0 +1,117 @@
+{
+  "angle": {
+    "key": "front_passenger_side",
+    "label": "Front Passenger Side",
+    "sortIndex": 8,
+    "confidence": 0.97
+  },
+  "carPosition": {
+    "boundingBox": {
+      "x": 80,
+      "y": 269,
+      "width": 1300,
+      "height": 473
+    },
+    "center": {
+      "x": 730,
+      "y": 506
+    },
+    "vehicleCoverage": {
+      "widthPercent": 84.6,
+      "heightPercent": 51.3
+    },
+    "visiblePanels": [
+      "hood",
+      "roof",
+      "front_bumper",
+      "right_fender",
+      "right_door_front",
+      "right_door_rear",
+      "right_quarter_panel",
+      "windshield",
+      "rear_window",
+      "rear_bumper"
+    ]
+  },
+  "damageHotspots": [],
+  "featureHotspots": [
+    {
+      "id": "feat-001",
+      "type": "alloy_wheels",
+      "category": "exterior_design",
+      "confidence": 0.98,
+      "position": {
+        "x_norm": 0.392,
+        "y_norm": 0.708
+      },
+      "color": "#1E88E5",
+      "description": "Front multi-spoke alloy wheel visible."
+    },
+    {
+      "id": "feat-002",
+      "type": "alloy_wheels",
+      "category": "exterior_design",
+      "confidence": 0.98,
+      "position": {
+        "x_norm": 0.797,
+        "y_norm": 0.696
+      },
+      "color": "#1E88E5",
+      "description": "Rear multi-spoke alloy wheel visible."
+    },
+    {
+      "id": "feat-003",
+      "type": "led_headlights",
+      "category": "safety",
+      "confidence": 0.95,
+      "position": {
+        "x_norm": 0.225,
+        "y_norm": 0.475
+      },
+      "color": "#1E88E5",
+      "description": "Sharp LED headlight assembly on front passenger side."
+    },
+    {
+      "id": "feat-004",
+      "type": "body_color_mirror",
+      "category": "exterior_design",
+      "confidence": 0.9,
+      "position": {
+        "x_norm": 0.529,
+        "y_norm": 0.388
+      },
+      "color": "#1E88E5",
+      "description": "Body-color passenger-side mirror with integrated styling."
+    },
+    {
+      "id": "feat-005",
+      "type": "roof_rails",
+      "category": "convenience",
+      "confidence": 0.9,
+      "position": {
+        "x_norm": 0.604,
+        "y_norm": 0.258
+      },
+      "color": "#1E88E5",
+      "description": "Low-profile roof rails running along the roofline."
+    },
+    {
+      "id": "feat-006",
+      "type": "privacy_glass",
+      "category": "convenience",
+      "confidence": 0.92,
+      "position": {
+        "x_norm": 0.656,
+        "y_norm": 0.337
+      },
+      "color": "#1E88E5",
+      "description": "Dark rear side glass and rear quarter glass privacy tint."
+    }
+  ],
+  "summary": {
+    "totalDamage": 0,
+    "totalFeatures": 6,
+    "overallCondition": "excellent",
+    "conditionScore": 9.7
+  }
+}

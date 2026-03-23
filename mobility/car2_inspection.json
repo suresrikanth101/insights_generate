@@ -1,0 +1,116 @@
+{
+  "angle": {
+    "key": "front_driver_side",
+    "label": "Front Driver Side",
+    "sortIndex": 2,
+    "confidence": 0.98
+  },
+  "carPosition": {
+    "boundingBox": {
+      "x": 83,
+      "y": 252,
+      "width": 1400,
+      "height": 584
+    },
+    "center": {
+      "x": 783,
+      "y": 544
+    },
+    "vehicleCoverage": {
+      "widthPercent": 91.1,
+      "heightPercent": 57.0
+    },
+    "visiblePanels": [
+      "hood",
+      "roof",
+      "front_bumper",
+      "left_fender",
+      "left_door_front",
+      "left_door_rear",
+      "left_quarter_panel",
+      "windshield",
+      "rear_window"
+    ]
+  },
+  "damageHotspots": [],
+  "featureHotspots": [
+    {
+      "id": "feat-001",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.97,
+      "position": {
+        "x_norm": 0.448,
+        "y_norm": 0.705
+      },
+      "color": "#1E88E5",
+      "description": "Multi-spoke alloy front wheel visible on the driver side."
+    },
+    {
+      "id": "feat-002",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.95,
+      "position": {
+        "x_norm": 0.094,
+        "y_norm": 0.61
+      },
+      "color": "#1E88E5",
+      "description": "Multi-spoke alloy rear wheel visible on the driver side."
+    },
+    {
+      "id": "feat-003",
+      "type": "led_headlights",
+      "category": "safety",
+      "confidence": 0.96,
+      "position": {
+        "x_norm": 0.619,
+        "y_norm": 0.505
+      },
+      "color": "#1E88E5",
+      "description": "Slim LED headlight assembly integrated into the front fascia."
+    },
+    {
+      "id": "feat-004",
+      "type": "fog_lights",
+      "category": "safety",
+      "confidence": 0.61,
+      "position": {
+        "x_norm": 0.666,
+        "y_norm": 0.622
+      },
+      "color": "#1E88E5",
+      "description": "Lower front bumper lighting or accent housing visible near the corner."
+    },
+    {
+      "id": "feat-005",
+      "type": "premium_badge",
+      "category": "exterior_design",
+      "confidence": 0.92,
+      "position": {
+        "x_norm": 0.846,
+        "y_norm": 0.515
+      },
+      "color": "#1E88E5",
+      "description": "Toyota emblem centered on the upper grille area."
+    },
+    {
+      "id": "feat-006",
+      "type": "sport_grille",
+      "category": "exterior_design",
+      "confidence": 0.91,
+      "position": {
+        "x_norm": 0.799,
+        "y_norm": 0.697
+      },
+      "color": "#1E88E5",
+      "description": "Large black honeycomb lower grille with sporty front-end styling."
+    }
+  ],
+  "summary": {
+    "totalDamage": 0,
+    "totalFeatures": 6,
+    "overallCondition": "excellent",
+    "conditionScore": 9.6
+  }
+}

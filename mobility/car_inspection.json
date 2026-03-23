@@ -1,0 +1,247 @@
+{
+  "angle": {
+    "key": "front_passenger_side",
+    "label": "Front Passenger Side",
+    "sortIndex": 8,
+    "confidence": 0.98
+  },
+  "carPosition": {
+    "boundingBox": {
+      "x": 64,
+      "y": 28,
+      "width": 1311,
+      "height": 1104
+    },
+    "center": {
+      "x": 720,
+      "y": 580
+    },
+    "vehicleCoverage": {
+      "widthPercent": 85.4,
+      "heightPercent": 71.9
+    },
+    "visiblePanels": [
+      "hood",
+      "trunk",
+      "roof",
+      "front_bumper",
+      "rear_bumper",
+      "right_fender",
+      "right_door_front",
+      "right_door_rear",
+      "right_quarter_panel",
+      "windshield",
+      "rear_window"
+    ]
+  },
+  "damageHotspots": [
+    {
+      "id": "dmg-001",
+      "type": "dent",
+      "severity": "severe",
+      "confidence": 0.99,
+      "panel": "hood",
+      "position": {
+        "x_norm": 0.2708,
+        "y_norm": 0.4486
+      },
+      "region": {
+        "x_norm": 0.0475,
+        "y_norm": 0.2201,
+        "width_norm": 0.4486,
+        "height_norm": 0.4245
+      },
+      "color": "#E53935",
+      "description": "Large deep multi-point crush deformation across most of the hood, spanning roughly 45% of image width and 42% of image height."
+    },
+    {
+      "id": "dmg-002",
+      "type": "broken_part",
+      "severity": "severe",
+      "confidence": 0.98,
+      "panel": "front_bumper",
+      "position": {
+        "x_norm": 0.1139,
+        "y_norm": 0.6296
+      },
+      "region": {
+        "x_norm": 0.0208,
+        "y_norm": 0.4505,
+        "width_norm": 0.2292,
+        "height_norm": 0.301
+      },
+      "color": "#E53935",
+      "description": "Front bumper assembly is torn and partially detached with major structural breakage, covering a large lower-front area."
+    },
+    {
+      "id": "dmg-003",
+      "type": "misaligned_panel",
+      "severity": "severe",
+      "confidence": 0.95,
+      "panel": "right_fender",
+      "position": {
+        "x_norm": 0.3828,
+        "y_norm": 0.5645
+      },
+      "region": {
+        "x_norm": 0.3086,
+        "y_norm": 0.4492,
+        "width_norm": 0.1237,
+        "height_norm": 0.2188
+      },
+      "color": "#E53935",
+      "description": "Right front fender is heavily displaced and bent inward with pronounced panel gap near the hood and lamp area."
+    },
+    {
+      "id": "dmg-004",
+      "type": "crack",
+      "severity": "severe",
+      "confidence": 0.99,
+      "panel": "windshield",
+      "position": {
+        "x_norm": 0.487,
+        "y_norm": 0.3053
+      },
+      "region": {
+        "x_norm": 0.2969,
+        "y_norm": 0.1641,
+        "width_norm": 0.3646,
+        "height_norm": 0.28
+      },
+      "color": "#E53935",
+      "description": "Windshield is extensively shattered with dense spider cracking and a large collapsed opening across most of the glass."
+    },
+    {
+      "id": "dmg-005",
+      "type": "dent",
+      "severity": "moderate",
+      "confidence": 0.92,
+      "panel": "trunk",
+      "position": {
+        "x_norm": 0.7689,
+        "y_norm": 0.1426
+      },
+      "region": {
+        "x_norm": 0.651,
+        "y_norm": 0.03,
+        "width_norm": 0.2409,
+        "height_norm": 0.224
+      },
+      "color": "#FB8C00",
+      "description": "Trunk lid has broad moderate-depth impact dents and creasing over most of the decklid surface."
+    },
+    {
+      "id": "dmg-006",
+      "type": "dent",
+      "severity": "moderate",
+      "confidence": 0.9,
+      "panel": "right_door_front",
+      "position": {
+        "x_norm": 0.6992,
+        "y_norm": 0.584
+      },
+      "region": {
+        "x_norm": 0.6276,
+        "y_norm": 0.422,
+        "width_norm": 0.1328,
+        "height_norm": 0.3008
+      },
+      "color": "#FB8C00",
+      "description": "Right front door shows a broad mid-depth side impact dent and wrinkling centered in the lower-middle section."
+    },
+    {
+      "id": "dmg-007",
+      "type": "dent",
+      "severity": "moderate",
+      "confidence": 0.88,
+      "panel": "right_quarter_panel",
+      "position": {
+        "x_norm": 0.8665,
+        "y_norm": 0.5469
+      },
+      "region": {
+        "x_norm": 0.8177,
+        "y_norm": 0.4258,
+        "width_norm": 0.1107,
+        "height_norm": 0.2148
+      },
+      "color": "#FB8C00",
+      "description": "Right rear quarter panel has visible creasing and denting around the wheel arch and aft side body area."
+    },
+    {
+      "id": "dmg-008",
+      "type": "broken_part",
+      "severity": "moderate",
+      "confidence": 0.86,
+      "panel": "rear_bumper",
+      "position": {
+        "x_norm": 0.8984,
+        "y_norm": 0.571
+      },
+      "region": {
+        "x_norm": 0.8555,
+        "y_norm": 0.5,
+        "width_norm": 0.0911,
+        "height_norm": 0.1328
+      },
+      "color": "#FB8C00",
+      "description": "Rear bumper corner appears deformed or partially missing on the passenger side with moderate visible damage."
+    }
+  ],
+  "featureHotspots": [
+    {
+      "id": "feat-001",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.95,
+      "position": {
+        "x_norm": 0.5104,
+        "y_norm": 0.7318
+      },
+      "color": "#1E88E5",
+      "description": "Visible multi-spoke alloy front wheel."
+    },
+    {
+      "id": "feat-002",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.88,
+      "position": {
+        "x_norm": 0.8268,
+        "y_norm": 0.5911
+      },
+      "color": "#1E88E5",
+      "description": "Visible alloy rear wheel on passenger side."
+    },
+    {
+      "id": "feat-003",
+      "type": "sunroof",
+      "category": "convenience",
+      "confidence": 0.97,
+      "position": {
+        "x_norm": 0.6029,
+        "y_norm": 0.1979
+      },
+      "color": "#1E88E5",
+      "description": "Glass sunroof panel integrated into the roof."
+    },
+    {
+      "id": "feat-004",
+      "type": "led_headlights",
+      "category": "safety",
+      "confidence": 0.84,
+      "position": {
+        "x_norm": 0.2474,
+        "y_norm": 0.6842
+      },
+      "color": "#1E88E5",
+      "description": "Projector-style front headlight assembly visible on the passenger side."
+    }
+  ],
+  "summary": {
+    "totalDamage": 8,
+    "totalFeatures": 4,
+    "overallCondition": "poor",
+    "conditionScore": 1.8
+  }
+}

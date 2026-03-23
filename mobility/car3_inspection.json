@@ -1,0 +1,128 @@
+{
+  "angle": {
+    "key": "rear_driver_side",
+    "label": "rear driver side",
+    "sortIndex": 4,
+    "confidence": 0.98
+  },
+  "carPosition": {
+    "boundingBox": {
+      "x": 46,
+      "y": 207,
+      "width": 1445,
+      "height": 591
+    },
+    "center": {
+      "x": 769,
+      "y": 503
+    },
+    "vehicleCoverage": {
+      "widthPercent": 94.1,
+      "heightPercent": 57.7
+    },
+    "visiblePanels": [
+      "trunk",
+      "roof",
+      "rear_bumper",
+      "left_fender",
+      "left_door_front",
+      "left_door_rear",
+      "left_quarter_panel",
+      "rear_window",
+      "windshield"
+    ]
+  },
+  "damageHotspots": [],
+  "featureHotspots": [
+    {
+      "id": "feat-001",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.96,
+      "position": {
+        "x_norm": 0.348,
+        "y_norm": 0.701
+      },
+      "color": "#1E88E5",
+      "description": "Dark multi-spoke alloy rear wheel visible on driver side."
+    },
+    {
+      "id": "feat-002",
+      "type": "alloy_wheels",
+      "category": "performance",
+      "confidence": 0.94,
+      "position": {
+        "x_norm": 0.063,
+        "y_norm": 0.52
+      },
+      "color": "#1E88E5",
+      "description": "Dark multi-spoke alloy front wheel visible on driver side."
+    },
+    {
+      "id": "feat-003",
+      "type": "rear_spoiler",
+      "category": "exterior_design",
+      "confidence": 0.9,
+      "position": {
+        "x_norm": 0.771,
+        "y_norm": 0.381
+      },
+      "color": "#1E88E5",
+      "description": "Integrated lip spoiler on the trunk lid."
+    },
+    {
+      "id": "feat-004",
+      "type": "shark_fin_antenna",
+      "category": "technology",
+      "confidence": 0.92,
+      "position": {
+        "x_norm": 0.559,
+        "y_norm": 0.173
+      },
+      "color": "#1E88E5",
+      "description": "Roof-mounted shark fin antenna centered near the rear of the roof."
+    },
+    {
+      "id": "feat-005",
+      "type": "dual_exhaust",
+      "category": "performance",
+      "confidence": 0.95,
+      "position": {
+        "x_norm": 0.892,
+        "y_norm": 0.739
+      },
+      "color": "#1E88E5",
+      "description": "Dual visible exhaust outlets on the passenger side of the rear bumper."
+    },
+    {
+      "id": "feat-006",
+      "type": "led_tail_lights",
+      "category": "safety",
+      "confidence": 0.93,
+      "position": {
+        "x_norm": 0.613,
+        "y_norm": 0.422
+      },
+      "color": "#1E88E5",
+      "description": "Wraparound LED-style tail lamp cluster on the left rear."
+    },
+    {
+      "id": "feat-007",
+      "type": "led_tail_lights",
+      "category": "safety",
+      "confidence": 0.92,
+      "position": {
+        "x_norm": 0.898,
+        "y_norm": 0.42
+      },
+      "color": "#1E88E5",
+      "description": "Wraparound LED-style tail lamp cluster on the right rear."
+    }
+  ],
+  "summary": {
+    "totalDamage": 0,
+    "totalFeatures": 7,
+    "overallCondition": "excellent",
+    "conditionScore": 9.4
+  }
+}
